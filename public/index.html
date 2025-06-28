@@ -489,10 +489,10 @@
 					// Connect to real-time updates
 					connectToGameUpdates(currentGameId);
 				} else {
-					showMessage(data.error || 'Failed to load game', 'error');
+					showGameError(data.error || 'Game not found');
 				}
 			} catch (error) {
-				showMessage('Failed to load game', 'error');
+				showGameError('Failed to load game');
 			} finally {
 				hideLoading();
 			}
@@ -678,16 +678,37 @@
 		}
 
 		// Join game by ID from landing page
-		function joinGameById() {
+		async function joinGameById() {
 			const gameId = document.getElementById('joinGameId').value.trim();
 			if (gameId) {
-				window.location.href = `/game/${gameId}`;
+				showLoading();
+				try {
+					const response = await fetch(`/api/games/${gameId}`);
+					if (response.ok) {
+						window.location.href = `/game/${gameId}`;
+					} else {
+						const data = await response.json();
+						showMessage(data.error || 'Game not found', 'error');
+					}
+				} catch (error) {
+					showMessage('Failed to join game', 'error');
+				} finally {
+					hideLoading();
+				}
+			} else {
+				showMessage('Please enter a Game ID', 'error');
 			}
 		}
 
 		// Route based on current URL
 		function routeToCurrentPage() {
 			const path = window.location.pathname;
+			
+			// Hide error page first
+			const errorDiv = document.getElementById('gameError');
+			if (errorDiv) {
+				errorDiv.classList.add('hidden');
+			}
 			
 			if (path === '/') {
 				// Landing page
@@ -804,6 +825,39 @@
 				eventSource = null;
 			}
 			document.getElementById('realtimeIndicator').style.display = 'none';
+		}
+
+		// Show game error page
+		function showGameError(errorMessage) {
+			document.getElementById('landingPage').classList.add('hidden');
+			document.getElementById('newGameForm').classList.add('hidden');
+			document.getElementById('gameView').classList.add('hidden');
+			
+			// Show error page
+			const errorDiv = document.getElementById('gameError') || createGameErrorElement();
+			errorDiv.classList.remove('hidden');
+			
+			// Update error message
+			const errorText = errorDiv.querySelector('#errorMessage');
+			if (errorText) {
+				errorText.textContent = errorMessage;
+			}
+		}
+
+		// Create game error element if it doesn't exist
+		function createGameErrorElement() {
+			const errorDiv = document.createElement('div');
+			errorDiv.id = 'gameError';
+			errorDiv.className = 'card';
+			errorDiv.innerHTML = `
+				<div style="text-align: center; padding: 40px;">
+					<h2 style="color: #dc3545; margin-bottom: 20px;">⚠️ Game Not Found</h2>
+					<p id="errorMessage" style="color: #666; margin-bottom: 30px; font-size: 1.1rem;">Game not found</p>
+					<button class="btn" onclick="goToNewGame()">Back to Home</button>
+				</div>
+			`;
+			document.querySelector('.container').appendChild(errorDiv);
+			return errorDiv;
 		}
 	</script>
 </body>

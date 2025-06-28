@@ -137,14 +137,20 @@ export function createRoutes() {
   app.get("/games/:gameId/events", async (c) => {
     const gameId = c.req.param("gameId");
 
+    const db = new DatabaseService(c.env.DB);
+
+    // Verify game exists first
+    const game = await db.getGame(gameId);
+    if (!game) {
+      return c.json({ error: "Game not found" }, 404);
+    }
+
     // Set SSE headers
     c.header("Content-Type", "text/event-stream");
     c.header("Cache-Control", "no-cache");
     c.header("Connection", "keep-alive");
     c.header("Access-Control-Allow-Origin", "*");
     c.header("Access-Control-Allow-Headers", "Cache-Control");
-
-    const db = new DatabaseService(c.env.DB);
 
     // Create a readable stream for SSE
     const stream = new ReadableStream({
