@@ -588,6 +588,7 @@
 			container.innerHTML = '';
 
 			const sortedPlayers = [...currentGame.players].sort((a, b) => b.total_score - a.total_score);
+			const leaderScore = sortedPlayers[0]?.total_score || 0;
 			
 			sortedPlayers.forEach((player, index) => {
 				const playerDiv = document.createElement('div');
@@ -595,11 +596,24 @@
 				playerDiv.style.marginBottom = '15px';
 				playerDiv.style.background = index === 0 ? '#d4edda' : '#f8f9fa';
 				
+				// Calculate score difference from leader
+				const scoreDifference = leaderScore - player.total_score;
+				const differenceText = index === 0 
+					? '🏆 Leader' 
+					: scoreDifference > 0 
+						? `-${scoreDifference} points behind` 
+						: scoreDifference < 0 
+							? `+${Math.abs(scoreDifference)} points ahead` 
+							: 'Tied for lead';
+				
 				playerDiv.innerHTML = `
 					<div style="display: flex; justify-content: space-between; align-items: center;">
 						<div>
 							<h4 style="margin: 0; color: #333;">${player.name}</h4>
-							<p style="margin: 5px 0 0 0; color: #666;">Total Score: ${player.total_score}</p>
+							<p style="margin: 5px 0 0 0; color: #666;">
+								Total Score: ${player.total_score}
+								<span style="margin-left: 10px; font-size: 0.9rem; color: ${index === 0 ? '#28a745' : '#dc3545'};">${differenceText}</span>
+							</p>
 						</div>
 						${index === 0 ? '<span style="font-size: 1.5rem;">🏆</span>' : ''}
 					</div>
