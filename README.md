@@ -48,7 +48,7 @@ A beautiful, modern web application for tracking Rummy game scores. Built with C
 
 4. **Create D1 Database**
    ```bash
-   wrangler d1 create rummyknight-db
+   wrangler d1 create rummyknight
    ```
 
 5. **Update database ID**
@@ -57,7 +57,7 @@ A beautiful, modern web application for tracking Rummy game scores. Built with C
 
 6. **Initialize database schema**
    ```bash
-   wrangler d1 execute rummyknight-db --file=migrations/0001_initial.sql
+   wrangler d1 migrations apply DB
    ```
 
 7. **Start development server**
@@ -67,7 +67,7 @@ A beautiful, modern web application for tracking Rummy game scores. Built with C
 
 8. **Deploy to production**
    ```bash
-   npm run deploy
+   make deploy-with-migrations
    ```
 
 ## Usage
@@ -153,8 +153,7 @@ The application uses four main tables:
 │   └── types.ts          # TypeScript type definitions
 ├── public/
 │   └── index.html        # Frontend application
-├── migrations/
-│   └── 0001_initial.sql  # Database schema
+├── migrations/           # Database schema
 ├── wrangler.jsonc        # Cloudflare Workers configuration
 └── package.json          # Dependencies and scripts
 ```

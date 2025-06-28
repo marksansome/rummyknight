@@ -27,4 +27,4 @@ This section is a top-level "blueprint" describing the solution architecture and
 - each game will create a unique URL which is specific to that game instance. This will be used so we can track multiple games at the same time, but you are unable to view the score of another game without the unique url to access it
 
 3. **game information**
-- when starting a new game we must ask who the player names are and track their scores independetly
+- when starting a new game we must ask who the player names are and track their scores independently
