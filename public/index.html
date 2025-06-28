@@ -1,19 +1,810 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Hello, World!</title>
-	</head>
-	<body>
-		<h1 id="heading"></h1>
-		<script>
-			fetch('/message')
-				.then((resp) => resp.text())
-				.then((text) => {
-					const h1 = document.getElementById('heading');
-					h1.textContent = text;
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Rummy Knight - Score Tracker</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			color: #333;
+		}
+
+		.container {
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 20px;
+		}
+
+		.header {
+			text-align: center;
+			margin-bottom: 40px;
+			color: white;
+		}
+
+		.header h1 {
+			font-size: 3rem;
+			margin-bottom: 10px;
+			text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+		}
+
+		.header p {
+			font-size: 1.2rem;
+			opacity: 0.9;
+		}
+
+		.card {
+			background: white;
+			border-radius: 15px;
+			padding: 30px;
+			margin-bottom: 30px;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+			backdrop-filter: blur(10px);
+		}
+
+		.form-group {
+			margin-bottom: 20px;
+		}
+
+		.form-group label {
+			display: block;
+			margin-bottom: 8px;
+			font-weight: 600;
+			color: #555;
+		}
+
+		.form-group input, .form-group select {
+			width: 100%;
+			padding: 12px;
+			border: 2px solid #e1e5e9;
+			border-radius: 8px;
+			font-size: 16px;
+			transition: border-color 0.3s ease;
+		}
+
+		.form-group input:focus, .form-group select:focus {
+			outline: none;
+			border-color: #667eea;
+		}
+
+		.btn {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border: none;
+			padding: 12px 24px;
+			border-radius: 8px;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+
+		.btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+		}
+
+		.btn:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+			transform: none;
+		}
+
+		.btn-secondary {
+			background: #6c757d;
+		}
+
+		.btn-danger {
+			background: #dc3545;
+		}
+
+		.btn-success {
+			background: #28a745;
+		}
+
+		.player-inputs {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+			gap: 15px;
+			margin-bottom: 20px;
+		}
+
+		.score-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 15px;
+			margin-bottom: 20px;
+		}
+
+		.score-input {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 15px;
+			border: 2px solid #e1e5e9;
+			border-radius: 10px;
+			background: #f8f9fa;
+		}
+
+		.score-input label {
+			font-weight: 600;
+			margin-bottom: 8px;
+			color: #555;
+		}
+
+		.score-input input {
+			width: 80px;
+			text-align: center;
+			font-size: 18px;
+			font-weight: bold;
+		}
+
+		.game-info {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+			gap: 20px;
+			margin-bottom: 30px;
+		}
+
+		.stats-card {
+			background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+			color: white;
+			padding: 20px;
+			border-radius: 10px;
+			text-align: center;
+		}
+
+		.stats-card h3 {
+			font-size: 1.5rem;
+			margin-bottom: 10px;
+		}
+
+		.stats-card .value {
+			font-size: 2.5rem;
+			font-weight: bold;
+		}
+
+		.hands-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 20px;
+		}
+
+		.hands-table th,
+		.hands-table td {
+			padding: 12px;
+			text-align: center;
+			border-bottom: 1px solid #e1e5e9;
+		}
+
+		.hands-table th {
+			background: #f8f9fa;
+			font-weight: 600;
+			color: #555;
+		}
+
+		.hands-table tr:hover {
+			background: #f8f9fa;
+		}
+
+		.winner {
+			background: #d4edda !important;
+			color: #155724;
+			font-weight: bold;
+		}
+
+		.hidden {
+			display: none;
+		}
+
+		.loading {
+			text-align: center;
+			padding: 40px;
+			color: #666;
+		}
+
+		.error {
+			background: #f8d7da;
+			color: #721c24;
+			padding: 15px;
+			border-radius: 8px;
+			margin-bottom: 20px;
+			border: 1px solid #f5c6cb;
+		}
+
+		.success {
+			background: #d4edda;
+			color: #155724;
+			padding: 15px;
+			border-radius: 8px;
+			margin-bottom: 20px;
+			border: 1px solid #c3e6cb;
+		}
+
+		.dealer-info {
+			background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+			color: #333;
+			padding: 15px;
+			border-radius: 10px;
+			margin-bottom: 20px;
+			text-align: center;
+			font-weight: 600;
+		}
+
+		@media (max-width: 768px) {
+			.header h1 {
+				font-size: 2rem;
+			}
+			
+			.container {
+				padding: 10px;
+			}
+			
+			.card {
+				padding: 20px;
+			}
+			
+			.player-inputs,
+			.score-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>🃏 Rummy Knight</h1>
+			<p>Track your Rummy game scores with style</p>
+		</div>
+
+		<!-- Landing Page -->
+		<div id="landingPage" class="card">
+			<h2 style="text-align:center; margin-bottom: 24px;">Welcome to Rummy Knight</h2>
+			<div style="display: flex; flex-direction: column; align-items: center; gap: 24px;">
+				<button class="btn btn-success" style="width: 220px; font-size: 1.2rem;" onclick="showNewGameFormFromLanding()">Start New Game</button>
+				<div style="width: 100%; max-width: 350px;">
+					<label for="joinGameId" style="font-weight: 600; color: #555; margin-bottom: 8px; display: block;">Join Existing Game</label>
+					<div style="display: flex; gap: 8px;">
+						<input type="text" id="joinGameId" placeholder="Enter Game ID" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #e1e5e9; font-size: 1rem;">
+						<button class="btn" onclick="joinGameById()">Join</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- New Game Form -->
+		<div id="newGameForm" class="card hidden">
+			<h2>Start a New Game</h2>
+			<div class="player-inputs">
+				<div class="form-group">
+					<label for="player1">Player 1</label>
+					<input type="text" id="player1" placeholder="Enter player name" required>
+				</div>
+				<div class="form-group">
+					<label for="player2">Player 2</label>
+					<input type="text" id="player2" placeholder="Enter player name" required>
+				</div>
+				<div class="form-group">
+					<label for="player3">Player 3 (Optional)</label>
+					<input type="text" id="player3" placeholder="Enter player name">
+				</div>
+				<div class="form-group">
+					<label for="player4">Player 4 (Optional)</label>
+					<input type="text" id="player4" placeholder="Enter player name">
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="initialDealer">Initial Dealer</label>
+				<select id="initialDealer" required>
+					<option value="">Select initial dealer...</option>
+				</select>
+			</div>
+			<button class="btn" onclick="createGame()">Start Game</button>
+		</div>
+
+		<!-- Game View -->
+		<div id="gameView" class="hidden">
+			<div class="card">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+					<div style="display: flex; align-items: center; gap: 10px;">
+						<h2 style="margin: 0;">Game in Progress</h2>
+						<span id="realtimeIndicator" style="font-size: 0.8rem; color: #28a745; display: none;">🟢 Live</span>
+					</div>
+					<button class="btn btn-secondary" onclick="goToNewGame()">New Game</button>
+				</div>
+				<div class="game-info">
+					<div class="stats-card">
+						<h3>Total Hands</h3>
+						<div class="value" id="totalHands">0</div>
+					</div>
+					<div class="stats-card">
+						<h3>Next Dealer</h3>
+						<div class="value" id="currentDealer">-</div>
+					</div>
+					<div class="stats-card">
+						<h3>Game ID</h3>
+						<div class="value" id="gameId" style="font-size: 1.2rem; cursor: pointer; user-select: all; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="copyGameId()" title="Click to copy Game ID">
+							<span>-</span>
+							<span style="font-size: 1rem; opacity: 0.7;">📋</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Player Scores -->
+				<h3>Player Scores</h3>
+				<div id="playerScores"></div>
+
+				<!-- Add Hand Form -->
+				<div class="card" style="margin-top: 30px;">
+					<h3>Add New Hand</h3>
+					<div id="scoreInputs" class="score-grid"></div>
+					<button class="btn btn-success" onclick="addHand()">Add Hand</button>
+				</div>
+
+				<!-- Hands History -->
+				<div class="card" style="margin-top: 30px;">
+					<h3>Hand History</h3>
+					<div id="handsHistory"></div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Loading -->
+		<div id="loading" class="loading hidden">
+			<h3>Loading...</h3>
+		</div>
+
+		<!-- Messages -->
+		<div id="messages"></div>
+	</div>
+
+	<script>
+		let currentGame = null;
+		let currentGameId = null;
+		let eventSource = null;
+
+		// Utility functions
+		function showMessage(message, type = 'success') {
+			const messagesDiv = document.getElementById('messages');
+			const messageDiv = document.createElement('div');
+			messageDiv.className = type;
+			messageDiv.textContent = message;
+			messagesDiv.appendChild(messageDiv);
+			
+			setTimeout(() => {
+				messageDiv.remove();
+			}, 5000);
+		}
+
+		function showLoading() {
+			document.getElementById('loading').classList.remove('hidden');
+		}
+
+		function hideLoading() {
+			document.getElementById('loading').classList.add('hidden');
+		}
+
+		function showGameView() {
+			document.getElementById('newGameForm').classList.add('hidden');
+			document.getElementById('gameView').classList.remove('hidden');
+		}
+
+		function showNewGameForm() {
+			document.getElementById('gameView').classList.add('hidden');
+			document.getElementById('newGameForm').classList.remove('hidden');
+		}
+
+		function updateInitialDealerSelect() {
+			const select = document.getElementById('initialDealer');
+			select.innerHTML = '<option value="">Select initial dealer...</option>';
+			
+			for (let i = 1; i <= 4; i++) {
+				const player = document.getElementById(`player${i}`).value.trim();
+				if (player) {
+					const option = document.createElement('option');
+					option.value = player;
+					option.textContent = player;
+					select.appendChild(option);
+				}
+			}
+		}
+
+		// Add event listeners to player inputs
+		for (let i = 1; i <= 4; i++) {
+			document.getElementById(`player${i}`).addEventListener('input', updateInitialDealerSelect);
+		}
+
+		// API functions
+		async function createGame() {
+			const players = [];
+			for (let i = 1; i <= 4; i++) {
+				const player = document.getElementById(`player${i}`).value.trim();
+				if (player) players.push(player);
+			}
+
+			if (players.length < 2) {
+				showMessage('Please enter at least 2 player names', 'error');
+				return;
+			}
+
+			const initialDealer = document.getElementById('initialDealer').value;
+			if (!initialDealer) {
+				showMessage('Please select an initial dealer', 'error');
+				return;
+			}
+
+			showLoading();
+			try {
+				const response = await fetch('/api/games', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ 
+						player_names: players,
+						initial_dealer_name: initialDealer
+					})
 				});
-		</script>
-	</body>
+
+				const data = await response.json();
+				
+				if (response.ok) {
+					currentGameId = data.game_id;
+					// Update URL to the new game page
+					window.history.pushState({}, '', `/game/${currentGameId}`);
+					await loadGame();
+					showMessage('Game created successfully!');
+				} else {
+					showMessage(data.error || 'Failed to create game', 'error');
+				}
+			} catch (error) {
+				showMessage('Failed to create game', 'error');
+			} finally {
+				hideLoading();
+			}
+		}
+
+		async function loadGame() {
+			if (!currentGameId) return;
+
+			showLoading();
+			try {
+				const response = await fetch(`/api/games/${currentGameId}`);
+				const data = await response.json();
+				
+				if (response.ok) {
+					currentGame = data;
+					displayGame();
+					showGameView();
+					
+					// Connect to real-time updates
+					connectToGameUpdates(currentGameId);
+				} else {
+					showMessage(data.error || 'Failed to load game', 'error');
+				}
+			} catch (error) {
+				showMessage('Failed to load game', 'error');
+			} finally {
+				hideLoading();
+			}
+		}
+
+		async function getNextDealer() {
+			if (!currentGameId) return null;
+
+			try {
+				const response = await fetch(`/api/games/${currentGameId}/next-dealer`);
+				const data = await response.json();
+				
+				if (response.ok) {
+					return data;
+				}
+			} catch (error) {
+				console.error('Failed to get next dealer:', error);
+			}
+			return null;
+		}
+
+		async function addHand() {
+			if (!currentGame) return;
+
+			const scores = [];
+			let hasScores = false;
+			
+			currentGame.players.forEach(player => {
+				const scoreInput = document.getElementById(`score-${player.id}`);
+				const score = parseInt(scoreInput.value) || 0;
+				scores.push({ player_id: player.id, score });
+				if (score !== 0) hasScores = true;
+			});
+
+			if (!hasScores) {
+				showMessage('Please enter at least one score', 'error');
+				return;
+			}
+
+			showLoading();
+			try {
+				const response = await fetch(`/api/games/${currentGameId}/hands`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						dealer_player_id: null, // Let the server auto-select
+						scores
+					})
+				});
+
+				const data = await response.json();
+				
+				if (response.ok) {
+					await loadGame();
+					showMessage('Hand added successfully!');
+				} else {
+					showMessage(data.error || 'Failed to add hand', 'error');
+				}
+			} catch (error) {
+				showMessage('Failed to add hand', 'error');
+			} finally {
+				hideLoading();
+			}
+		}
+
+		// Display functions
+		async function displayGame() {
+			if (!currentGame) return;
+
+			// Update game info
+			document.getElementById('totalHands').textContent = currentGame.hands.length;
+			document.getElementById('gameId').querySelector('span').textContent = currentGame.id;
+			
+			// Get and display next dealer
+			const nextDealer = await getNextDealer();
+			const dealerDisplay = nextDealer ? nextDealer.dealer_name : '-';
+			document.getElementById('currentDealer').textContent = dealerDisplay;
+
+			// Display player scores
+			displayPlayerScores();
+			
+			// Setup score inputs
+			setupScoreInputs();
+			
+			// Display hands history
+			displayHandsHistory();
+		}
+
+		function displayPlayerScores() {
+			const container = document.getElementById('playerScores');
+			container.innerHTML = '';
+
+			const sortedPlayers = [...currentGame.players].sort((a, b) => b.total_score - a.total_score);
+			
+			sortedPlayers.forEach((player, index) => {
+				const playerDiv = document.createElement('div');
+				playerDiv.className = 'card';
+				playerDiv.style.marginBottom = '15px';
+				playerDiv.style.background = index === 0 ? '#d4edda' : '#f8f9fa';
+				
+				playerDiv.innerHTML = `
+					<div style="display: flex; justify-content: space-between; align-items: center;">
+						<div>
+							<h4 style="margin: 0; color: #333;">${player.name}</h4>
+							<p style="margin: 5px 0 0 0; color: #666;">Total Score: ${player.total_score}</p>
+						</div>
+						${index === 0 ? '<span style="font-size: 1.5rem;">🏆</span>' : ''}
+					</div>
+				`;
+				
+				container.appendChild(playerDiv);
+			});
+		}
+
+		function setupScoreInputs() {
+			const container = document.getElementById('scoreInputs');
+			container.innerHTML = '';
+			
+			currentGame.players.forEach(player => {
+				const scoreDiv = document.createElement('div');
+				scoreDiv.className = 'score-input';
+				scoreDiv.innerHTML = `
+					<label>${player.name}</label>
+					<input type="number" id="score-${player.id}" placeholder="0" min="-100" max="100">
+				`;
+				container.appendChild(scoreDiv);
+			});
+		}
+
+		function displayHandsHistory() {
+			const container = document.getElementById('handsHistory');
+			
+			if (currentGame.hands.length === 0) {
+				container.innerHTML = '<p style="text-align: center; color: #666;">No hands played yet</p>';
+				return;
+			}
+
+			let tableHTML = `
+				<table class="hands-table">
+					<thead>
+						<tr>
+							<th>Hand #</th>
+							<th>Dealer</th>
+			`;
+			
+			currentGame.players.forEach(player => {
+				tableHTML += `<th>${player.name}</th>`;
+			});
+			
+			tableHTML += '</tr></thead><tbody>';
+			
+			currentGame.hands.forEach(hand => {
+				tableHTML += `
+					<tr>
+						<td><strong>${hand.hand_number}</strong></td>
+						<td>${hand.dealer_name}</td>
+				`;
+				
+				currentGame.players.forEach(player => {
+					const score = hand.scores.find(s => s.player_id === player.id);
+					tableHTML += `<td>${score ? score.score : '-'}</td>`;
+				});
+				
+				tableHTML += '</tr>';
+			});
+			
+			tableHTML += '</tbody></table>';
+			container.innerHTML = tableHTML;
+		}
+
+		// Show landing page by default
+		function showLandingPage() {
+			document.getElementById('landingPage').classList.remove('hidden');
+			document.getElementById('newGameForm').classList.add('hidden');
+			document.getElementById('gameView').classList.add('hidden');
+		}
+
+		// Show new game form from landing page
+		function showNewGameFormFromLanding() {
+			window.location.href = '/new';
+		}
+
+		// Join game by ID from landing page
+		function joinGameById() {
+			const gameId = document.getElementById('joinGameId').value.trim();
+			if (gameId) {
+				window.location.href = `/game/${gameId}`;
+			}
+		}
+
+		// Route based on current URL
+		function routeToCurrentPage() {
+			const path = window.location.pathname;
+			
+			if (path === '/') {
+				// Landing page
+				disconnectFromGameUpdates();
+				showLandingPage();
+			} else if (path === '/new') {
+				// New game form
+				disconnectFromGameUpdates();
+				document.getElementById('landingPage').classList.add('hidden');
+				document.getElementById('newGameForm').classList.remove('hidden');
+				document.getElementById('gameView').classList.add('hidden');
+			} else if (path.startsWith('/game/')) {
+				// Game page
+				const gameMatch = path.match(/^\/game\/(.+)$/);
+				if (gameMatch) {
+					currentGameId = gameMatch[1];
+					document.getElementById('landingPage').classList.add('hidden');
+					document.getElementById('newGameForm').classList.add('hidden');
+					document.getElementById('gameView').classList.remove('hidden');
+					loadGame();
+				}
+			}
+		}
+
+		// On load, route to the appropriate page
+		window.addEventListener('load', () => {
+			routeToCurrentPage();
+		});
+
+		// Update popstate handler to route to appropriate page
+		window.addEventListener('popstate', () => {
+			routeToCurrentPage();
+		});
+
+		// Update goToNewGame to disconnect from SSE
+		function goToNewGame() {
+			disconnectFromGameUpdates();
+			window.location.href = '/';
+		}
+
+		// Copy Game ID to clipboard
+		async function copyGameId() {
+			const gameIdElement = document.getElementById('gameId');
+			const gameId = gameIdElement.querySelector('span').textContent;
+			
+			try {
+				// Try modern Clipboard API first
+				if (navigator.clipboard && window.isSecureContext) {
+					await navigator.clipboard.writeText(gameId);
+					showMessage('Game ID copied to clipboard!');
+				} else {
+					// Fallback for older browsers or non-secure contexts
+					const tempInput = document.createElement('input');
+					tempInput.value = gameId;
+					tempInput.style.position = 'absolute';
+					tempInput.style.left = '-9999px';
+					document.body.appendChild(tempInput);
+					tempInput.select();
+					document.execCommand('copy');
+					document.body.removeChild(tempInput);
+					showMessage('Game ID copied to clipboard!');
+				}
+			} catch (error) {
+				showMessage('Failed to copy Game ID', 'error');
+			}
+		}
+
+		// Connect to real-time updates
+		function connectToGameUpdates(gameId) {
+			// Close existing connection if any
+			if (eventSource) {
+				eventSource.close();
+			}
+
+			// Connect to SSE stream
+			eventSource = new EventSource(`/api/games/${gameId}/events`);
+			
+			eventSource.onmessage = function(event) {
+				try {
+					const data = JSON.parse(event.data);
+					
+					if (data.type === 'connected') {
+						console.log('Connected to game updates for:', data.gameId);
+						document.getElementById('realtimeIndicator').style.display = 'inline';
+					} else if (data.type === 'game_update') {
+						// Update the game data if it's different from current
+						if (data.game && (!currentGame || data.game.hands.length !== currentGame.hands.length)) {
+							currentGame = data.game;
+							displayGame();
+							showMessage('Game updated!', 'success');
+						}
+					}
+				} catch (error) {
+					console.error('Error parsing SSE data:', error);
+				}
+			};
+
+			eventSource.onerror = function(error) {
+				console.error('SSE connection error:', error);
+				document.getElementById('realtimeIndicator').style.display = 'none';
+				// Attempt to reconnect after a delay
+				setTimeout(() => {
+					if (currentGameId) {
+						connectToGameUpdates(currentGameId);
+					}
+				}, 5000);
+			};
+		}
+
+		// Disconnect from real-time updates
+		function disconnectFromGameUpdates() {
+			if (eventSource) {
+				eventSource.close();
+				eventSource = null;
+			}
+			document.getElementById('realtimeIndicator').style.display = 'none';
+		}
+	</script>
+</body>
 </html>

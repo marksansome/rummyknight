@@ -13,7 +13,14 @@
 	},
 	"observability": {
 		"enabled": true
-	}
+	},
+	"d1_databases": [
+		{
+      "binding": "DB",
+      "database_name": "rummyknight",
+      "database_id": "d7081848-2fec-4fec-bc43-68d705a35e96"
+		}
+	]
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

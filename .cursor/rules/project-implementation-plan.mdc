@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Project Implementation Plan
+globs: *
+alwaysApply: false
+---
+# Detailed Project Implementation Plan
+
+This section is a top-level "blueprint" describing the solution architecture and how each component fits together.
+
+## Overview
+
+**Goal:** Build a website that tracks scores for the popular card game Rummy, so you can keep track of total score per player, current dealing player, and enter/track game stats. 
+
+## Key Components
+
+1. **store games**
+- each game will consist of two to four players
+- each game will consist of multiple hands where the resulting score will be stored in this app
+- game and hand scores will be stored in this system using Cloudflare D1
+
+2. **multiple games**
+- each game will create a unique URL which is specific to that game instance. This will be used so we can track multiple games at the same time, but you are unable to view the score of another game without the unique url to access it
+
+3. **game information**
+- when starting a new game we must ask who the player names are and track their scores independetly
