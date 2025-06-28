@@ -40,26 +40,32 @@ A beautiful, modern web application for tracking Rummy game scores. Built with C
    npm install
    ```
 
-3. **Create D1 Database**
+3. **Configure Wrangler**
+   ```bash
+   # Copy the example configuration
+   cp wrangler.example.jsonc wrangler.jsonc
+   ```
+
+4. **Create D1 Database**
    ```bash
    wrangler d1 create rummyknight-db
    ```
 
-4. **Update database ID**
+5. **Update database ID**
    - Copy the database ID from the output of the previous command
-   - Update the `database_id` in `wrangler.jsonc`
+   - Update the `database_id` in `wrangler.jsonc` (replace `your-database-id-here`)
 
-5. **Initialize database schema**
+6. **Initialize database schema**
    ```bash
    wrangler d1 execute rummyknight-db --file=migrations/0001_initial.sql
    ```
 
-6. **Start development server**
+7. **Start development server**
    ```bash
    npm run dev
    ```
 
-7. **Deploy to production**
+8. **Deploy to production**
    ```bash
    npm run deploy
    ```

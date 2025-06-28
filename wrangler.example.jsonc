@@ -1,4 +1,7 @@
 /**
+ * Example Wrangler configuration file
+ * Copy this to wrangler.jsonc and update with your actual values
+ * 
  * For more details on how to configure Wrangler, refer to:
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
@@ -16,9 +19,9 @@
 	},
 	"d1_databases": [
 		{
-      "binding": "DB",
-      "database_name": "rummyknight",
-      "database_id": "d7081848-2fec-4fec-bc43-68d705a35e96"
+			"binding": "DB",
+			"database_name": "rummyknight",
+			"database_id": "your-database-id-here"
 		}
 	]
 	/**
@@ -55,4 +58,4 @@
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	 */
 	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
-}
+} 
