@@ -92,42 +92,148 @@ export class DatabaseService {
   }
 
   async getHandsWithScores(gameId: string): Promise<HandWithScores[]> {
-    const hands = await this.db
+    // Use a single JOIN query to get all hands with scores
+    const handsWithScores = await this.db
       .prepare(
         `
-      SELECT h.*, p.name as dealer_name
+      SELECT 
+        h.id,
+        h.game_id,
+        h.hand_number,
+        h.dealer_player_id,
+        h.created_at,
+        p.name as dealer_name,
+        hs.id as score_id,
+        hs.player_id,
+        hs.score
       FROM hands h
       JOIN players p ON h.dealer_player_id = p.id
+      LEFT JOIN hand_scores hs ON h.id = hs.hand_id
       WHERE h.game_id = ?
-      ORDER BY h.hand_number
+      ORDER BY h.hand_number, hs.player_id
     `
       )
       .bind(gameId)
-      .all<HandWithScores & { dealer_name: string }>();
+      .all<{
+        id: number;
+        game_id: string;
+        hand_number: number;
+        dealer_player_id: number;
+        created_at: string;
+        dealer_name: string;
+        score_id: number | null;
+        player_id: number | null;
+        score: number | null;
+      }>();
 
-    const handsWithScores: HandWithScores[] = [];
+    // Group the results by hand
+    const handsMap = new Map<number, HandWithScores>();
 
-    for (const hand of hands.results || []) {
-      const scores = await this.db
-        .prepare(
-          `
-        SELECT hs.*
-        FROM hand_scores hs
-        WHERE hs.hand_id = ?
-        ORDER BY hs.player_id
-      `
-        )
-        .bind(hand.id)
-        .all<HandScore>();
+    for (const row of handsWithScores.results || []) {
+      if (!handsMap.has(row.id)) {
+        handsMap.set(row.id, {
+          id: row.id,
+          game_id: row.game_id,
+          hand_number: row.hand_number,
+          dealer_player_id: row.dealer_player_id,
+          created_at: row.created_at,
+          dealer_name: row.dealer_name,
+          scores: [],
+        });
+      }
 
-      handsWithScores.push({
-        ...hand,
-        scores: scores.results || [],
-        dealer_name: hand.dealer_name,
-      });
+      if (
+        row.player_id !== null &&
+        row.score !== null &&
+        row.score_id !== null
+      ) {
+        handsMap.get(row.id)!.scores.push({
+          id: row.score_id,
+          hand_id: row.id,
+          player_id: row.player_id,
+          score: row.score,
+          created_at: row.created_at,
+        });
+      }
     }
 
-    return handsWithScores;
+    return Array.from(handsMap.values());
+  }
+
+  // Get only recent hands for better performance
+  async getRecentHandsWithScores(
+    gameId: string,
+    limit: number = 20
+  ): Promise<HandWithScores[]> {
+    const handsWithScores = await this.db
+      .prepare(
+        `
+      SELECT 
+        h.id,
+        h.game_id,
+        h.hand_number,
+        h.dealer_player_id,
+        h.created_at,
+        p.name as dealer_name,
+        hs.id as score_id,
+        hs.player_id,
+        hs.score
+      FROM hands h
+      JOIN players p ON h.dealer_player_id = p.id
+      LEFT JOIN hand_scores hs ON h.id = hs.hand_id
+      WHERE h.game_id = ?
+      ORDER BY h.hand_number DESC, hs.player_id
+      LIMIT ?
+    `
+      )
+      .bind(gameId, limit * 4) // Multiply by 4 to account for scores per hand
+      .all<{
+        id: number;
+        game_id: string;
+        hand_number: number;
+        dealer_player_id: number;
+        created_at: string;
+        dealer_name: string;
+        score_id: number | null;
+        player_id: number | null;
+        score: number | null;
+      }>();
+
+    // Group the results by hand
+    const handsMap = new Map<number, HandWithScores>();
+
+    for (const row of handsWithScores.results || []) {
+      if (!handsMap.has(row.id)) {
+        handsMap.set(row.id, {
+          id: row.id,
+          game_id: row.game_id,
+          hand_number: row.hand_number,
+          dealer_player_id: row.dealer_player_id,
+          created_at: row.created_at,
+          dealer_name: row.dealer_name,
+          scores: [],
+        });
+      }
+
+      if (
+        row.player_id !== null &&
+        row.score !== null &&
+        row.score_id !== null
+      ) {
+        handsMap.get(row.id)!.scores.push({
+          id: row.score_id,
+          hand_id: row.id,
+          player_id: row.player_id,
+          score: row.score,
+          created_at: row.created_at,
+        });
+      }
+    }
+
+    // Return hands in ascending order (oldest first)
+    return Array.from(handsMap.values()).sort(
+      (a, b) => a.hand_number - b.hand_number
+    );
   }
 
   async addHand(

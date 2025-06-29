@@ -375,6 +375,7 @@
 	<script>
 		let currentGame = null;
 		let currentGameId = null;
+		let cachedStats = null;
 
 		// Utility functions
 		function showMessage(message, type = 'success') {
@@ -405,6 +406,11 @@
 		function showNewGameForm() {
 			document.getElementById('gameView').classList.add('hidden');
 			document.getElementById('newGameForm').classList.remove('hidden');
+		}
+
+		// Clear cached stats when game data changes
+		function clearCachedStats() {
+			cachedStats = null;
 		}
 
 		function updateInitialDealerSelect() {
@@ -565,6 +571,9 @@
 		async function displayGame() {
 			if (!currentGame) return;
 
+			// Clear cached stats when game data changes
+			clearCachedStats();
+
 			// Update game info
 			document.getElementById('totalHands').textContent = currentGame.hands.length;
 			document.getElementById('gameId').querySelector('span').textContent = currentGame.id;
@@ -696,6 +705,59 @@
 				return;
 			}
 
+			// Show only the most recent 20 hands initially
+			const recentHands = currentGame.hands.slice(-20);
+			const hasMoreHands = currentGame.hands.length > 20;
+			
+			let tableHTML = `
+				<table class="hands-table">
+					<thead>
+						<tr>
+							<th>Hand #</th>
+							<th>Dealer</th>
+			`;
+			
+			currentGame.players.forEach(player => {
+				tableHTML += `<th>${player.name}</th>`;
+			});
+			
+			tableHTML += '</tr></thead><tbody>';
+			
+			recentHands.forEach(hand => {
+				tableHTML += `
+					<tr>
+						<td><strong>${hand.hand_number}</strong></td>
+						<td>${hand.dealer_name}</td>
+				`;
+				
+				currentGame.players.forEach(player => {
+					const score = hand.scores.find(s => s.player_id === player.id);
+					tableHTML += `<td>${score ? score.score : '-'}</td>`;
+				});
+				
+				tableHTML += '</tr>';
+			});
+			
+			tableHTML += '</tbody></table>';
+			
+			// Add "Load More" button if there are more hands
+			if (hasMoreHands) {
+				tableHTML += `
+					<div style="text-align: center; margin-top: 20px;">
+						<button class="btn btn-secondary" onclick="loadAllHands()">
+							Load All ${currentGame.hands.length} Hands
+						</button>
+					</div>
+				`;
+			}
+			
+			container.innerHTML = tableHTML;
+		}
+
+		// Load all hands when user clicks "Load More"
+		function loadAllHands() {
+			const container = document.getElementById('handsHistory');
+			
 			let tableHTML = `
 				<table class="hands-table">
 					<thead>
@@ -807,6 +869,11 @@
 		}
 
 		function calculateGameStats() {
+			// Return cached stats if available
+			if (cachedStats) {
+				return cachedStats;
+			}
+
 			const stats = {
 				dealerStats: [],
 				handWins: [],
@@ -929,6 +996,8 @@
 			const mostActivePlayers = stats.handWins.filter(h => h.wins === mostWins);
 			stats.mostActive = mostActivePlayers.map(p => p.player).join(', ');
 
+			// Cache the results
+			cachedStats = stats;
 			return stats;
 		}
 
