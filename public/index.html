@@ -339,15 +339,21 @@
 					</div>
 				</div>
 
-				<!-- Player Scores -->
-				<h3>Player Scores</h3>
-				<div id="playerScores"></div>
-
 				<!-- Add Hand Form -->
 				<div class="card" style="margin-top: 30px;">
 					<h3>Add New Hand</h3>
 					<div id="scoreInputs" class="score-grid"></div>
 					<button class="btn btn-success" onclick="addHand()">Add Hand</button>
+				</div>
+
+				<!-- Player Scores -->
+				<h3>Player Scores</h3>
+				<div id="playerScores"></div>
+
+				<!-- Game Statistics -->
+				<div class="card" style="margin-top: 30px;">
+					<h3>📊 Game Statistics</h3>
+					<div id="gameStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;"></div>
 				</div>
 
 				<!-- Hands History -->
@@ -576,6 +582,9 @@
 			// Display player scores
 			displayPlayerScores();
 			
+			// Display game statistics
+			displayGameStats();
+			
 			// Setup score inputs
 			setupScoreInputs();
 			
@@ -632,10 +641,56 @@
 				scoreDiv.className = 'score-input';
 				scoreDiv.innerHTML = `
 					<label>${player.name}</label>
-					<input type="number" id="score-${player.id}" placeholder="0" min="-100" max="100">
+					<input type="text" id="score-${player.id}" placeholder="0" oninput="validateScoreInput(this)" onkeydown="return validateKeyDown(event)">
 				`;
 				container.appendChild(scoreDiv);
 			});
+		}
+
+		// Validate score input to only allow numbers and minus sign
+		function validateScoreInput(input) {
+			let value = input.value;
+			
+			// Remove all characters except numbers and minus sign
+			value = value.replace(/[^0-9-]/g, '');
+			
+			// Ensure minus sign only appears at the beginning
+			if (value.includes('-')) {
+				// Remove all minus signs
+				value = value.replace(/-/g, '');
+				// Add minus sign at the beginning if it was there originally
+				if (input.value.startsWith('-')) {
+					value = '-' + value;
+				}
+			}
+			
+			// Update the input value
+			input.value = value;
+		}
+
+		// Validate key down to only allow numbers, minus, and control keys
+		function validateKeyDown(event) {
+			const key = event.key;
+			const keyCode = event.keyCode;
+			
+			// Allow control keys: backspace, delete, tab, escape, enter, arrow keys, home, end
+			if ([8, 9, 27, 13, 37, 38, 39, 40, 35, 36].includes(keyCode)) {
+				return true;
+			}
+			
+			// Allow minus sign only at the beginning
+			if (key === '-' && event.target.value === '') {
+				return true;
+			}
+			
+			// Allow only numbers
+			if (/^[0-9]$/.test(key)) {
+				return true;
+			}
+			
+			// Prevent all other keys
+			event.preventDefault();
+			return false;
 		}
 
 		function displayHandsHistory() {
@@ -677,6 +732,209 @@
 			
 			tableHTML += '</tbody></table>';
 			container.innerHTML = tableHTML;
+		}
+
+		function displayGameStats() {
+			if (!currentGame || currentGame.hands.length === 0) {
+				document.getElementById('gameStats').innerHTML = '<p style="text-align: center; color: #666;">No hands played yet</p>';
+				return;
+			}
+
+			const stats = calculateGameStats();
+			const container = document.getElementById('gameStats');
+			container.innerHTML = '';
+
+			// Dealer Performance Stats
+			const dealerStats = document.createElement('div');
+			dealerStats.className = 'stats-card';
+			dealerStats.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+			dealerStats.innerHTML = `
+				<h4 style="margin-bottom: 15px;">🎯 Dealer Performance</h4>
+				${stats.dealerStats.map(stat => `
+					<div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+						<span>${stat.player}</span>
+						<span style="font-weight: bold;">${stat.wins}/${stat.deals} (${stat.percentage}%)</span>
+					</div>
+				`).join('')}
+			`;
+			container.appendChild(dealerStats);
+
+			// Hand Wins Stats
+			const handWinsStats = document.createElement('div');
+			handWinsStats.className = 'stats-card';
+			handWinsStats.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+			handWinsStats.innerHTML = `
+				<h4 style="margin-bottom: 15px;">🏆 Hand Wins</h4>
+				${stats.handWins.map(stat => `
+					<div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+						<span>${stat.player}</span>
+						<span style="font-weight: bold;">${stat.wins} wins</span>
+					</div>
+				`).join('')}
+			`;
+			container.appendChild(handWinsStats);
+
+			// Average Scores
+			const avgScoresStats = document.createElement('div');
+			avgScoresStats.className = 'stats-card';
+			avgScoresStats.style.background = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+			avgScoresStats.innerHTML = `
+				<h4 style="margin-bottom: 15px;">📈 Average Scores</h4>
+				${stats.averageScores.map(stat => `
+					<div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+						<span>${stat.player}</span>
+						<span style="font-weight: bold;">${stat.average}</span>
+					</div>
+				`).join('')}
+			`;
+			container.appendChild(avgScoresStats);
+
+			// Game Highlights
+			const highlightsStats = document.createElement('div');
+			highlightsStats.className = 'stats-card';
+			highlightsStats.style.background = 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)';
+			highlightsStats.innerHTML = `
+				<h4 style="margin-bottom: 15px;">⭐ Game Highlights</h4>
+				<div style="margin-bottom: 10px;">
+					<span>Highest Score:</span>
+					<div style="font-weight: bold; color: #28a745;">${stats.highestScore}</div>
+				</div>
+				<div style="margin-bottom: 10px;">
+					<span>Lowest Score:</span>
+					<div style="font-weight: bold; color: #dc3545;">${stats.lowestScore}</div>
+				</div>
+				<div style="margin-bottom: 10px;">
+					<span>Most Active:</span>
+					<div style="font-weight: bold;">${stats.mostActive}</div>
+				</div>
+			`;
+			container.appendChild(highlightsStats);
+		}
+
+		function calculateGameStats() {
+			const stats = {
+				dealerStats: [],
+				handWins: [],
+				averageScores: [],
+				highestScore: '',
+				lowestScore: '',
+				mostActive: ''
+			};
+
+			// Calculate dealer performance
+			const dealerWins = {};
+			const dealerDeals = {};
+			
+			currentGame.hands.forEach(hand => {
+				const dealerName = hand.dealer_name;
+				dealerDeals[dealerName] = (dealerDeals[dealerName] || 0) + 1;
+				
+				// Find winner of this hand (highest score)
+				const handWinner = hand.scores.reduce((winner, score) => 
+					score.score > winner.score ? score : winner
+				);
+				const winnerPlayer = currentGame.players.find(p => p.id === handWinner.player_id);
+				
+				if (winnerPlayer && winnerPlayer.name === dealerName) {
+					dealerWins[dealerName] = (dealerWins[dealerName] || 0) + 1;
+				}
+			});
+
+			// Create dealer stats
+			currentGame.players.forEach(player => {
+				const deals = dealerDeals[player.name] || 0;
+				const wins = dealerWins[player.name] || 0;
+				const percentage = deals > 0 ? Math.round((wins / deals) * 100) : 0;
+				
+				stats.dealerStats.push({
+					player: player.name,
+					deals: deals,
+					wins: wins,
+					percentage: percentage
+				});
+			});
+
+			// Calculate hand wins
+			const handWinCounts = {};
+			currentGame.hands.forEach(hand => {
+				const handWinner = hand.scores.reduce((winner, score) => 
+					score.score > winner.score ? score : winner
+				);
+				const winnerPlayer = currentGame.players.find(p => p.id === handWinner.player_id);
+				if (winnerPlayer) {
+					handWinCounts[winnerPlayer.name] = (handWinCounts[winnerPlayer.name] || 0) + 1;
+				}
+			});
+
+			currentGame.players.forEach(player => {
+				stats.handWins.push({
+					player: player.name,
+					wins: handWinCounts[player.name] || 0
+				});
+			});
+
+			// Sort hand wins by number of wins
+			stats.handWins.sort((a, b) => b.wins - a.wins);
+
+			// Calculate average scores
+			const playerScores = {};
+			const playerHands = {};
+			
+			currentGame.hands.forEach(hand => {
+				hand.scores.forEach(score => {
+					const player = currentGame.players.find(p => p.id === score.player_id);
+					if (player) {
+						playerScores[player.name] = (playerScores[player.name] || 0) + score.score;
+						playerHands[player.name] = (playerHands[player.name] || 0) + 1;
+					}
+				});
+			});
+
+			currentGame.players.forEach(player => {
+				const totalScore = playerScores[player.name] || 0;
+				const handsPlayed = playerHands[player.name] || 0;
+				const average = handsPlayed > 0 ? (totalScore / handsPlayed).toFixed(1) : '0.0';
+				
+				stats.averageScores.push({
+					player: player.name,
+					average: average
+				});
+			});
+
+			// Sort average scores
+			stats.averageScores.sort((a, b) => parseFloat(b.average) - parseFloat(a.average));
+
+			// Find highest and lowest scores
+			let highestScore = -Infinity;
+			let lowestScore = Infinity;
+			let highestPlayer = '';
+			let lowestPlayer = '';
+
+			currentGame.hands.forEach(hand => {
+				hand.scores.forEach(score => {
+					const player = currentGame.players.find(p => p.id === score.player_id);
+					if (player) {
+						if (score.score > highestScore) {
+							highestScore = score.score;
+							highestPlayer = player.name;
+						}
+						if (score.score < lowestScore) {
+							lowestScore = score.score;
+							lowestPlayer = player.name;
+						}
+					}
+				});
+			});
+
+			stats.highestScore = `${highestPlayer} (${highestScore})`;
+			stats.lowestScore = `${lowestPlayer} (${lowestScore})`;
+
+			// Find most active player (most hands won)
+			const mostWins = Math.max(...stats.handWins.map(h => h.wins));
+			const mostActivePlayers = stats.handWins.filter(h => h.wins === mostWins);
+			stats.mostActive = mostActivePlayers.map(p => p.player).join(', ');
+
+			return stats;
 		}
 
 		// Show landing page by default
