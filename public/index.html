@@ -317,7 +317,6 @@
 				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
 					<div style="display: flex; align-items: center; gap: 10px;">
 						<h2 style="margin: 0;">Game in Progress</h2>
-						<span id="realtimeIndicator" style="font-size: 0.8rem; color: #28a745; display: none;">🟢 Live</span>
 					</div>
 					<button class="btn btn-secondary" onclick="goToNewGame()">New Game</button>
 				</div>
@@ -376,7 +375,6 @@
 	<script>
 		let currentGame = null;
 		let currentGameId = null;
-		let eventSource = null;
 
 		// Utility functions
 		function showMessage(message, type = 'success') {
@@ -491,9 +489,6 @@
 					currentGame = data;
 					displayGame();
 					showGameView();
-					
-					// Connect to real-time updates
-					connectToGameUpdates(currentGameId);
 				} else {
 					showGameError(data.error || 'Game not found');
 				}
@@ -984,11 +979,9 @@
 			
 			if (path === '/') {
 				// Landing page
-				disconnectFromGameUpdates();
 				showLandingPage();
 			} else if (path === '/new') {
 				// New game form
-				disconnectFromGameUpdates();
 				document.getElementById('landingPage').classList.add('hidden');
 				document.getElementById('newGameForm').classList.remove('hidden');
 				document.getElementById('gameView').classList.add('hidden');
@@ -1017,7 +1010,6 @@
 
 		// Update goToNewGame to disconnect from SSE
 		function goToNewGame() {
-			disconnectFromGameUpdates();
 			window.location.href = '/';
 		}
 
@@ -1046,57 +1038,6 @@
 			} catch (error) {
 				showMessage('Failed to copy Game ID', 'error');
 			}
-		}
-
-		// Connect to real-time updates
-		function connectToGameUpdates(gameId) {
-			// Close existing connection if any
-			if (eventSource) {
-				eventSource.close();
-			}
-
-			// Connect to SSE stream
-			eventSource = new EventSource(`/api/games/${gameId}/events`);
-			
-			eventSource.onmessage = function(event) {
-				try {
-					const data = JSON.parse(event.data);
-					
-					if (data.type === 'connected') {
-						console.log('Connected to game updates for:', data.gameId);
-						document.getElementById('realtimeIndicator').style.display = 'inline';
-					} else if (data.type === 'game_update') {
-						// Update the game data if it's different from current
-						if (data.game && (!currentGame || data.game.hands.length !== currentGame.hands.length)) {
-							currentGame = data.game;
-							displayGame();
-							showMessage('Game updated!', 'success');
-						}
-					}
-				} catch (error) {
-					console.error('Error parsing SSE data:', error);
-				}
-			};
-
-			eventSource.onerror = function(error) {
-				console.error('SSE connection error:', error);
-				document.getElementById('realtimeIndicator').style.display = 'none';
-				// Attempt to reconnect after a delay
-				setTimeout(() => {
-					if (currentGameId) {
-						connectToGameUpdates(currentGameId);
-					}
-				}, 5000);
-			};
-		}
-
-		// Disconnect from real-time updates
-		function disconnectFromGameUpdates() {
-			if (eventSource) {
-				eventSource.close();
-				eventSource = null;
-			}
-			document.getElementById('realtimeIndicator').style.display = 'none';
 		}
 
 		// Show game error page
