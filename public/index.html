@@ -1198,7 +1198,7 @@
 			if (link.download !== undefined) {
 				const url = URL.createObjectURL(blob);
 				link.setAttribute('href', url);
-				link.setAttribute('download', `rummy-game-${currentGame.id}-${new Date().toISOString().split('T')[0]}.csv`);
+				link.setAttribute('download', `rummy-game-${currentGame.id}-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.csv`);
 				link.style.visibility = 'hidden';
 				document.body.appendChild(link);
 				link.click();
@@ -1207,7 +1207,7 @@
 				// Fallback for older browsers
 				const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
 				link.setAttribute('href', encodedUri);
-				link.setAttribute('download', `rummy-game-${currentGame.id}-${new Date().toISOString().split('T')[0]}.csv`);
+				link.setAttribute('download', `rummy-game-${currentGame.id}-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.csv`);
 				document.body.appendChild(link);
 				link.click();
 				document.body.removeChild(link);
