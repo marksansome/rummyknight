@@ -360,6 +360,15 @@
 					<h3>Hand History</h3>
 					<div id="handsHistory"></div>
 				</div>
+
+				<!-- Export Section -->
+				<div class="card" style="margin-top: 30px;">
+					<h3>📊 Export Data</h3>
+					<p style="color: #666; margin-bottom: 20px;">Download game data for analysis or backup</p>
+					<button class="btn btn-secondary" onclick="exportToCSV()">
+						📥 Download Hand History CSV
+					</button>
+				</div>
 			</div>
 		</div>
 
@@ -1140,6 +1149,71 @@
 			`;
 			document.querySelector('.container').appendChild(errorDiv);
 			return errorDiv;
+		}
+
+		// Export to CSV
+		function exportToCSV() {
+			if (!currentGame || currentGame.hands.length === 0) {
+				showMessage('No hand data to export', 'error');
+				return;
+			}
+
+			console.log('Exporting game data:', currentGame);
+
+			// Create CSV content
+			let csvContent = '';
+			
+			// Add header row
+			const headers = ['Hand #', 'Dealer', 'Date'];
+			currentGame.players.forEach(player => {
+				headers.push(`${player.name} Score`);
+			});
+			csvContent += headers.join(',') + '\r\n';
+			
+			// Add data rows
+			currentGame.hands.forEach(hand => {
+				console.log('Processing hand:', hand);
+				
+				const row = [
+					hand.hand_number,
+					hand.dealer_name,
+					new Date(hand.created_at).toLocaleDateString()
+				];
+				
+				// Add scores for each player
+				currentGame.players.forEach(player => {
+					const score = hand.scores.find(s => s.player_id === player.id);
+					row.push(score ? score.score.toString() : '0');
+				});
+				
+				csvContent += row.join(',') + '\r\n';
+			});
+			
+			console.log('CSV content:', csvContent);
+			
+			// Create download link
+			const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+			const link = document.createElement('a');
+			
+			if (link.download !== undefined) {
+				const url = URL.createObjectURL(blob);
+				link.setAttribute('href', url);
+				link.setAttribute('download', `rummy-game-${currentGame.id}-${new Date().toISOString().split('T')[0]}.csv`);
+				link.style.visibility = 'hidden';
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+			} else {
+				// Fallback for older browsers
+				const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
+				link.setAttribute('href', encodedUri);
+				link.setAttribute('download', `rummy-game-${currentGame.id}-${new Date().toISOString().split('T')[0]}.csv`);
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+			}
+			
+			showMessage('CSV file downloaded successfully!');
 		}
 	</script>
 </body>
