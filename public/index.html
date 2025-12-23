@@ -458,7 +458,7 @@
 				<div class="card" style="margin-top: 30px;">
 					<h3>Add New Hand</h3>
 					<div id="scoreInputs" class="score-grid"></div>
-					<button class="btn btn-success" onclick="addHand()">Add Hand</button>
+					<button id="addHandButton" class="btn btn-success" onclick="addHand()">Add Hand</button>
 					<div id="addHandFormError" class="form-error hidden"></div>
 				</div>
 
@@ -511,6 +511,7 @@
 		let currentGameId = null;
 		let cachedStats = null;
 		let scoreChart = null;
+		let isSubmitting = false;
 
 		// Utility functions
 		function showMessage(message, type = 'success', targetContainer = null) {
@@ -729,6 +730,12 @@
 		async function addHand() {
 			if (!currentGame) return;
 
+			// Prevent multiple submissions - check and set atomically
+			if (isSubmitting) {
+				return;
+			}
+			isSubmitting = true;
+
 			const scores = [];
 			let hasScores = false;
 			
@@ -740,8 +747,16 @@
 			});
 
 			if (!hasScores) {
+				// Reset flag if validation fails
+				isSubmitting = false;
 				showMessage('Please enter at least one score', 'error', 'addHandFormError');
 				return;
+			}
+
+			// Disable button
+			const submitButton = document.getElementById('addHandButton');
+			if (submitButton) {
+				submitButton.disabled = true;
 			}
 
 			showLoading();
@@ -770,7 +785,13 @@
 			} catch (error) {
 				showMessage('Failed to add hand', 'error', 'addHandFormError');
 			} finally {
+				isSubmitting = false;
 				hideLoading();
+				// Re-enable button
+				const submitButton = document.getElementById('addHandButton');
+				if (submitButton) {
+					submitButton.disabled = false;
+				}
 			}
 		}
 
@@ -970,6 +991,11 @@
 				input.addEventListener('keydown', function(event) {
 					if (event.key === 'Enter' || event.keyCode === 13) {
 						event.preventDefault();
+						// Prevent processing Enter if already submitting
+						if (isSubmitting) {
+							event.stopImmediatePropagation();
+							return false;
+						}
 						handleScoreInputEnter(this);
 					} else {
 						return validateKeyDown(event);
@@ -998,6 +1024,11 @@
 
 		// Handle Enter key press on score inputs
 		function handleScoreInputEnter(currentInput) {
+			// Prevent submission if already submitting
+			if (isSubmitting) {
+				return;
+			}
+
 			// Get all score inputs in order
 			const allInputs = currentGame.players.map(player => 
 				document.getElementById(`score-${player.id}`)
@@ -1021,6 +1052,7 @@
 			if (!nextInput) {
 				if (currentIndex === allInputs.length - 1) {
 					// Last input - submit the hand
+					// addHand() will check and set isSubmitting flag
 					addHand();
 					return;
 				} else {
