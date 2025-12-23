@@ -734,8 +734,8 @@
 			if (isSubmitting) {
 				return;
 			}
-			isSubmitting = true;
 
+			// Collect scores first (before setting flag to prevent race condition)
 			const scores = [];
 			let hasScores = false;
 			
@@ -747,11 +747,21 @@
 			});
 
 			if (!hasScores) {
-				// Reset flag if validation fails
-				isSubmitting = false;
 				showMessage('Please enter at least one score', 'error', 'addHandFormError');
 				return;
 			}
+
+			// Now set flag and immediately clear form to prevent duplicate submissions
+			isSubmitting = true;
+			
+			// Clear and disable all score inputs immediately to prevent resubmission
+			currentGame.players.forEach(player => {
+				const scoreInput = document.getElementById(`score-${player.id}`);
+				if (scoreInput) {
+					scoreInput.value = '';
+					scoreInput.disabled = true;
+				}
+			});
 
 			// Disable button
 			const submitButton = document.getElementById('addHandButton');
@@ -787,10 +797,19 @@
 			} finally {
 				isSubmitting = false;
 				hideLoading();
-				// Re-enable button
+				// Re-enable button and inputs (in case of error - successful submission will reload game)
 				const submitButton = document.getElementById('addHandButton');
 				if (submitButton) {
 					submitButton.disabled = false;
+				}
+				// Re-enable inputs if they still exist (they'll be recreated on successful loadGame)
+				if (currentGame) {
+					currentGame.players.forEach(player => {
+						const scoreInput = document.getElementById(`score-${player.id}`);
+						if (scoreInput) {
+							scoreInput.disabled = false;
+						}
+					});
 				}
 			}
 		}
