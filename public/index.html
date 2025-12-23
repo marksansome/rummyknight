@@ -649,15 +649,81 @@
 			const container = document.getElementById('scoreInputs');
 			container.innerHTML = '';
 			
-			currentGame.players.forEach(player => {
+			currentGame.players.forEach((player, index) => {
 				const scoreDiv = document.createElement('div');
 				scoreDiv.className = 'score-input';
-				scoreDiv.innerHTML = `
-					<label>${player.name}</label>
-					<input type="text" id="score-${player.id}" placeholder="0" oninput="validateScoreInput(this)" onkeydown="return validateKeyDown(event)">
-				`;
+				const input = document.createElement('input');
+				input.type = 'text';
+				input.id = `score-${player.id}`;
+				input.placeholder = '0';
+				input.setAttribute('data-player-index', index);
+				input.addEventListener('input', function() { validateScoreInput(this); });
+				input.addEventListener('keydown', function(event) {
+					if (event.key === 'Enter' || event.keyCode === 13) {
+						event.preventDefault();
+						handleScoreInputEnter(this);
+					} else {
+						return validateKeyDown(event);
+					}
+				});
+				
+				const label = document.createElement('label');
+				label.textContent = player.name;
+				scoreDiv.appendChild(label);
+				scoreDiv.appendChild(input);
 				container.appendChild(scoreDiv);
 			});
+			
+			// Automatically focus on the first score input field
+			if (currentGame.players.length > 0) {
+				const firstInput = document.getElementById(`score-${currentGame.players[0].id}`);
+				if (firstInput) {
+					// Use setTimeout to ensure the DOM is fully updated
+					setTimeout(() => {
+						firstInput.focus();
+						firstInput.select();
+					}, 0);
+				}
+			}
+		}
+
+		// Handle Enter key press on score inputs
+		function handleScoreInputEnter(currentInput) {
+			// Get all score inputs in order
+			const allInputs = currentGame.players.map(player => 
+				document.getElementById(`score-${player.id}`)
+			).filter(input => input !== null);
+			
+			// Find current input index
+			const currentIndex = allInputs.indexOf(currentInput);
+			
+			// Find the next empty input (or next input if all are filled)
+			let nextInput = null;
+			for (let i = currentIndex + 1; i < allInputs.length; i++) {
+				const input = allInputs[i];
+				const value = input.value.trim();
+				if (value === '' || value === '0' || value === '-') {
+					nextInput = input;
+					break;
+				}
+			}
+			
+			// If no empty input found after current, check if we're on the last input
+			if (!nextInput) {
+				if (currentIndex === allInputs.length - 1) {
+					// Last input - submit the hand
+					addHand();
+					return;
+				} else {
+					// All remaining inputs are filled, move to next one anyway
+					nextInput = allInputs[currentIndex + 1];
+				}
+			}
+			
+			if (nextInput) {
+				nextInput.focus();
+				nextInput.select(); // Select text for easy replacement
+			}
 		}
 
 		// Validate score input to only allow numbers and minus sign
