@@ -267,6 +267,53 @@
 			font-weight: 600;
 		}
 
+		.success-popup {
+			position: fixed;
+			top: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: #d4edda;
+			color: #155724;
+			padding: 20px 30px;
+			border-radius: 10px;
+			border: 2px solid #c3e6cb;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+			z-index: 10000;
+			max-width: 500px;
+			width: 90%;
+			animation: slideDown 0.3s ease-out;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 15px;
+		}
+
+		.success-popup .success-close {
+			background: none;
+			border: none;
+			color: #155724;
+			font-size: 24px;
+			cursor: pointer;
+			padding: 0;
+			width: 30px;
+			height: 30px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
+			transition: background-color 0.2s;
+		}
+
+		.success-popup .success-close:hover {
+			background-color: rgba(21, 87, 36, 0.1);
+		}
+
+		.success-popup .success-message {
+			flex: 1;
+			font-weight: 600;
+		}
+
+
 		@keyframes slideDown {
 			from {
 				opacity: 0;
@@ -467,61 +514,42 @@
 
 		// Utility functions
 		function showMessage(message, type = 'success', targetContainer = null) {
-			// For errors, show as popup at the top of the page
-			if (type === 'error') {
-				showErrorPopup(message, targetContainer);
+			// For errors with targetContainer, show inline below the form
+			if (type === 'error' && targetContainer) {
+				showErrorInline(message, targetContainer);
 			} else {
-				// For success messages, use the original bottom location
-				const messagesDiv = document.getElementById('messages');
-				const messageDiv = document.createElement('div');
-				messageDiv.className = type;
-				messageDiv.textContent = message;
-				messagesDiv.appendChild(messageDiv);
-				
-				setTimeout(() => {
-					messageDiv.remove();
-				}, 5000);
+				// For all other messages, show as popup at the top of the page
+				showPopup(message, type);
 			}
 		}
 
-		function showErrorPopup(message, targetContainer = null) {
-			// Remove any existing error popup
-			const existingPopup = document.querySelector('.error-popup');
-			if (existingPopup) {
-				existingPopup.remove();
-			}
-
-			// If targetContainer is specified, show error inline below the form
-			if (targetContainer) {
-				const errorDiv = document.getElementById(targetContainer);
-				if (errorDiv) {
-					errorDiv.textContent = message;
-					errorDiv.classList.remove('hidden');
-					
-					// Scroll to error if needed
-					errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-					
-					// Auto-hide after 5 seconds
-					setTimeout(() => {
-						errorDiv.classList.add('hidden');
-					}, 5000);
-					return;
-				}
-			}
-
-			// Create popup error message
+		function showPopup(message, type = 'success') {
+			// Count existing popups to position this one correctly
+			const existingPopups = document.querySelectorAll('.error-popup, .success-popup');
+			const topOffset = 20 + (existingPopups.length * 80);
+			
+			// Determine popup class and close button class based on type
+			const popupClass = type === 'error' ? 'error-popup' : 'success-popup';
+			const closeClass = type === 'error' ? 'error-close' : 'success-close';
+			const messageClass = type === 'error' ? 'error-message' : 'success-message';
+			
+			// Create popup message
 			const popup = document.createElement('div');
-			popup.className = 'error-popup';
+			popup.className = popupClass;
+			popup.style.top = `${topOffset}px`;
 			
 			const messageSpan = document.createElement('span');
-			messageSpan.className = 'error-message';
+			messageSpan.className = messageClass;
 			messageSpan.textContent = message;
 			
 			const closeButton = document.createElement('button');
-			closeButton.className = 'error-close';
+			closeButton.className = closeClass;
 			closeButton.innerHTML = '×';
-			closeButton.setAttribute('aria-label', 'Close error message');
-			closeButton.onclick = () => popup.remove();
+			closeButton.setAttribute('aria-label', `Close ${type} message`);
+			closeButton.onclick = () => {
+				popup.remove();
+				repositionPopups();
+			};
 			
 			popup.appendChild(messageSpan);
 			popup.appendChild(closeButton);
@@ -532,8 +560,33 @@
 			setTimeout(() => {
 				if (popup.parentNode) {
 					popup.remove();
+					repositionPopups();
 				}
 			}, 5000);
+		}
+
+		function showErrorInline(message, targetContainer) {
+			const errorDiv = document.getElementById(targetContainer);
+			if (errorDiv) {
+				errorDiv.textContent = message;
+				errorDiv.classList.remove('hidden');
+				
+				// Scroll to error if needed
+				errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+				
+				// Auto-hide after 5 seconds
+				setTimeout(() => {
+					errorDiv.classList.add('hidden');
+				}, 5000);
+			}
+		}
+
+
+		function repositionPopups() {
+			const popups = document.querySelectorAll('.error-popup, .success-popup');
+			popups.forEach((popup, index) => {
+				popup.style.top = `${20 + (index * 80)}px`;
+			});
 		}
 
 		function showLoading() {
