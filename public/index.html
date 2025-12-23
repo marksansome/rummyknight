@@ -221,6 +221,73 @@
 			border: 1px solid #f5c6cb;
 		}
 
+		.error-popup {
+			position: fixed;
+			top: 20px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: #f8d7da;
+			color: #721c24;
+			padding: 20px 30px;
+			border-radius: 10px;
+			border: 2px solid #f5c6cb;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+			z-index: 10000;
+			max-width: 500px;
+			width: 90%;
+			animation: slideDown 0.3s ease-out;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 15px;
+		}
+
+		.error-popup .error-close {
+			background: none;
+			border: none;
+			color: #721c24;
+			font-size: 24px;
+			cursor: pointer;
+			padding: 0;
+			width: 30px;
+			height: 30px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
+			transition: background-color 0.2s;
+		}
+
+		.error-popup .error-close:hover {
+			background-color: rgba(114, 28, 36, 0.1);
+		}
+
+		.error-popup .error-message {
+			flex: 1;
+			font-weight: 600;
+		}
+
+		@keyframes slideDown {
+			from {
+				opacity: 0;
+				transform: translateX(-50%) translateY(-20px);
+			}
+			to {
+				opacity: 1;
+				transform: translateX(-50%) translateY(0);
+			}
+		}
+
+		.form-error {
+			background: #f8d7da;
+			color: #721c24;
+			padding: 12px 15px;
+			border-radius: 8px;
+			margin-top: 15px;
+			border: 1px solid #f5c6cb;
+			font-weight: 500;
+		}
+
 		.success {
 			background: #d4edda;
 			color: #155724;
@@ -310,6 +377,7 @@
 				</select>
 			</div>
 			<button class="btn" onclick="createGame()">Start Game</button>
+			<div id="newGameFormError" class="form-error hidden"></div>
 		</div>
 
 		<!-- Game View -->
@@ -344,6 +412,7 @@
 					<h3>Add New Hand</h3>
 					<div id="scoreInputs" class="score-grid"></div>
 					<button class="btn btn-success" onclick="addHand()">Add Hand</button>
+					<div id="addHandFormError" class="form-error hidden"></div>
 				</div>
 
 				<!-- Player Scores -->
@@ -397,15 +466,73 @@
 		let scoreChart = null;
 
 		// Utility functions
-		function showMessage(message, type = 'success') {
-			const messagesDiv = document.getElementById('messages');
-			const messageDiv = document.createElement('div');
-			messageDiv.className = type;
-			messageDiv.textContent = message;
-			messagesDiv.appendChild(messageDiv);
+		function showMessage(message, type = 'success', targetContainer = null) {
+			// For errors, show as popup at the top of the page
+			if (type === 'error') {
+				showErrorPopup(message, targetContainer);
+			} else {
+				// For success messages, use the original bottom location
+				const messagesDiv = document.getElementById('messages');
+				const messageDiv = document.createElement('div');
+				messageDiv.className = type;
+				messageDiv.textContent = message;
+				messagesDiv.appendChild(messageDiv);
+				
+				setTimeout(() => {
+					messageDiv.remove();
+				}, 5000);
+			}
+		}
+
+		function showErrorPopup(message, targetContainer = null) {
+			// Remove any existing error popup
+			const existingPopup = document.querySelector('.error-popup');
+			if (existingPopup) {
+				existingPopup.remove();
+			}
+
+			// If targetContainer is specified, show error inline below the form
+			if (targetContainer) {
+				const errorDiv = document.getElementById(targetContainer);
+				if (errorDiv) {
+					errorDiv.textContent = message;
+					errorDiv.classList.remove('hidden');
+					
+					// Scroll to error if needed
+					errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+					
+					// Auto-hide after 5 seconds
+					setTimeout(() => {
+						errorDiv.classList.add('hidden');
+					}, 5000);
+					return;
+				}
+			}
+
+			// Create popup error message
+			const popup = document.createElement('div');
+			popup.className = 'error-popup';
 			
+			const messageSpan = document.createElement('span');
+			messageSpan.className = 'error-message';
+			messageSpan.textContent = message;
+			
+			const closeButton = document.createElement('button');
+			closeButton.className = 'error-close';
+			closeButton.innerHTML = '×';
+			closeButton.setAttribute('aria-label', 'Close error message');
+			closeButton.onclick = () => popup.remove();
+			
+			popup.appendChild(messageSpan);
+			popup.appendChild(closeButton);
+			
+			document.body.appendChild(popup);
+			
+			// Auto-remove after 5 seconds
 			setTimeout(() => {
-				messageDiv.remove();
+				if (popup.parentNode) {
+					popup.remove();
+				}
 			}, 5000);
 		}
 
@@ -465,13 +592,13 @@
 			}
 
 			if (players.length < 2) {
-				showMessage('Please enter at least 2 player names', 'error');
+				showMessage('Please enter at least 2 player names', 'error', 'newGameFormError');
 				return;
 			}
 
 			const initialDealer = document.getElementById('initialDealer').value;
 			if (!initialDealer) {
-				showMessage('Please select an initial dealer', 'error');
+				showMessage('Please select an initial dealer', 'error', 'newGameFormError');
 				return;
 			}
 
@@ -496,11 +623,13 @@
 					window.history.pushState({}, '', `/game/${currentGameId}`);
 					await loadGame();
 					showMessage('Game created successfully!');
+					// Clear any error messages
+					document.getElementById('newGameFormError').classList.add('hidden');
 				} else {
-					showMessage(data.error || 'Failed to create game', 'error');
+					showMessage(data.error || 'Failed to create game', 'error', 'newGameFormError');
 				}
 			} catch (error) {
-				showMessage('Failed to create game', 'error');
+				showMessage('Failed to create game', 'error', 'newGameFormError');
 			} finally {
 				hideLoading();
 			}
@@ -558,7 +687,7 @@
 			});
 
 			if (!hasScores) {
-				showMessage('Please enter at least one score', 'error');
+				showMessage('Please enter at least one score', 'error', 'addHandFormError');
 				return;
 			}
 
@@ -580,11 +709,13 @@
 				if (response.ok) {
 					await loadGame();
 					showMessage('Hand added successfully!');
+					// Clear any error messages
+					document.getElementById('addHandFormError').classList.add('hidden');
 				} else {
-					showMessage(data.error || 'Failed to add hand', 'error');
+					showMessage(data.error || 'Failed to add hand', 'error', 'addHandFormError');
 				}
 			} catch (error) {
-				showMessage('Failed to add hand', 'error');
+				showMessage('Failed to add hand', 'error', 'addHandFormError');
 			} finally {
 				hideLoading();
 			}
